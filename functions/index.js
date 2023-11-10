@@ -76,6 +76,34 @@ exports.newWave = functions.firestore
         await admin.messaging().sendToDevice(fcmToken, payload);
     })
 
+exports.newConnection = functions.firestore
+    .document('/users_private/{uid}/connections/{connectionId}')
+    .onCreate(async (snapshot, context) => {
+
+        const toId = context.params.uid;
+        const fromId = context.params.connectionId;
+        const data = snapshot.data();
+        const username = data.username;
+        const profileUrl = data.profileUrl;
+
+        const receiverData = await db.collection('users').doc(toId).get();
+        const fcmToken = receiverData.data().fcmToken;
+
+        var payload = {
+            notification: {
+                title: 'You have a new connection',
+                body: 'You and ' + username + ' are now friends'
+            },
+            data: {
+                userId: fromId,
+                username: username,
+                profileUrl: profileUrl
+            }
+        };
+
+        await admin.messaging().sendToDevice(fcmToken, payload);
+    })
+
 exports.newLike = functions.firestore
     .document('/locations/{spotId}/likes/{userId}')
     .onCreate(async (snapshot, context) => {
@@ -163,7 +191,7 @@ exports.newCheckin = functions.firestore
     
             var payload = {
                 notification: {
-                    title: 'Someone new checked in' + spotName,
+                    title: 'Someone new checked in',
                     body: username + ' checked in ' + spotName
                 },
                 data: {
@@ -176,7 +204,30 @@ exports.newCheckin = functions.firestore
             await admin.messaging().sendToDevice(fcmToken, payload);
         });
 
-
-       
-
     })
+
+    exports.newMessage = functions.firestore
+        .document('messages/{toId}/recentMessage/{fromId}')
+        .onCreate(async (snapshot, context) => {
+            const toId = context.params.toId;
+            const fromId = context.params.fromId;
+            const data = snapshot.data();
+            const content = data.content;
+            const username = data.displayName;
+
+            const receiverData = await db.collection('users').doc(toId).get();
+            const fcmToken = receiverData.data().fcmToken;
+
+            var payload = {
+                notification: {
+                    title: username + ' sent you a message',
+                    body: content
+                },
+                data: {
+                    userId: fromId,
+                    content: content,
+                }
+            };
+
+            await admin.messaging().sendToDevice(fcmToken, payload);
+        })
