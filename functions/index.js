@@ -36,7 +36,7 @@ exports.newStamp = functions.firestore
         const payload = {
             notification: {
                 title: "You've earned 1 StreetCred",
-                body: username + " has checked in" + spotName,
+                body: username + " has checked in " + spotName,
             },
             data: {
                 userId: userId,
